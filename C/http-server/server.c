@@ -12,10 +12,101 @@
 
 #define BUFSIZE 8096
 
+typedef struct client_req {
+  int returncode;
+  char* filename;
+} client_req;
+
+char* header200_html = "HTTP/1.1 200 OK\nServer: Test Server\nContent-Type: text/html; charset=UTF-8\n\n";
+char* header200_css = "HTTP/1.1 200 OK\nServer: Test Server\nContent-Type: text/css; charset=UTF-8\n\n";
+char* header404 = "HTTP/1.1 404 Not Found\nServer: Test Server\n\n";
+
 void error(char *msg) {
   perror(msg);
   exit(1);
 }
+
+int sendToClient(int clientfd, char *msg) {
+  return write(clientfd, msg, strlen(msg));
+}
+
+void sendHeader(int clientfd, int returnCode) {
+  switch (returnCode) {
+    case 200:
+      sendToClient(clientfd, header200_html);
+      break;
+    case 404:
+      sendToClient(clientfd, header404);
+
+  }
+}
+
+void sendBody(int clientfd, char *filename) {
+  FILE *body = fopen(filename, "r");
+  char *current_line;
+  size_t req_size = 1;
+
+  int end_of_file;
+
+  while((end_of_file = getline(&current_line, &req_size, body)) > 0) {
+    sendToClient(clientfd, current_line);
+  } 
+}
+
+char* getClientRequest(int clientfd) {
+
+  FILE *fstream;
+  char *request;
+  char *current_line;
+  int previous_size = 1;
+  size_t req_size = 1;
+
+  fstream = fdopen(clientfd, "r");
+  request = malloc((sizeof(char) * req_size));
+  *request = '\0';
+  *current_line = '\0';
+  
+  int end_of_line;
+
+  while ((end_of_line = getline(&current_line, &req_size, fstream)) > 0) {
+    
+    if (strcmp(current_line, "\r\n") == 0)
+      break;
+    
+    request = realloc(request, size + previous_size);
+    previous_size += size;
+    strcat(request, current_line);
+  }
+
+  free(current_line);
+
+  return request;
+
+}
+
+client_req parseClientRequest(char *request) {
+  client_req info;
+
+  char *filename = malloc(sizeof(char) * strlen(request));
+
+  sscanf(request, "GET %s HTTP/1.1", filename);
+
+  char *index = "test-site";
+  strcat(index, filename);
+
+  FILE *fileExists = fopen(index, "r");
+
+  if (exists == NULL) {
+    info.returncode = 404;
+    info.filename = "404.html";
+  } else {
+    info.returncode = 200;
+    info.filename = index;
+  }
+
+  return info;
+}
+
 
 void sendHTTP(int sockfd) {
 
