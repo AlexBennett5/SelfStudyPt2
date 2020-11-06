@@ -1,4 +1,3 @@
-
 ;;; 1.1
 
 (define (square x) (* x x))
@@ -195,5 +194,51 @@
         (try next))))
   (try first-guess))
 
+(define (golden-ratio x)
+    (fixed-point-print (lambda (x) (+ 1 (/ 1 x))) 1.0))
+
+(define (log-solution x)
+    (fixed-point-print (lambda (x) (/ (log 1000) (log x))) 1.5))
+
+(define (fixed-point-print f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+    (display guess)
+    (display " -> ")
+    (display next)
+    (newline)
+    (if (close-enough? guess next)
+        next
+        (try next))))
+  (try first-guess))
+
+(define (cont-frac n d k)
+  (define (cont-aug q)
+    (cond ((= q k) (/ (n q) (d q)))
+          (else (/ (n q) (+ (d q) (cont-aug (inc q)))))))
+  (cont-aug 1))
+
+
+(define (cont-frac-iter n d k)
+  (define (cont-aug q result)
+    (if (= q 0) result (cont-aug (dec q) (/ (n q) (+ (d q) result)))))
+  (cont-aug k 0))
+
+(define (e-minus-two)
+  (cont-frac-iter (lambda (i) 1.0)
+                  (lambda (i) (if (= (remainder i 3) 2)
+                                  (* 2 (quotient (+ i 1) 3))
+                                  1))
+                  100))
+
+(define (tan-cf x k)
+  (cont-frac-iter (lambda (i) (if (= i 1) x (- (square x))))
+                  (lambda (i) (+ 1 (* 2 (- i 1))))
+                  k))
+
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
 
 
