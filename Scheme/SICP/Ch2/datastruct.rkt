@@ -110,9 +110,15 @@
         (p4 (* (upper-bound x) (upper-bound y))))
   (make-interval (min p1 p2 p3 p4) (max p1 p2 p3 p4))))
 
+(define (spans-zero? inv)
+  (and (>= (upper-bound inv) 0)
+       (<= (lower-bound inv) 0)))
+
 (define (div-interval x y)
-  (mul-interval x
-    (make-interval (/ 1.0 (upper-bound y)) (/ 1.0 (lower-bound y)))))
+  (if (spans-zero? y)
+      (error "div-interval cannot divide a interval than spans 0")
+      (mul-interval x
+        (make-interval (/ 1.0 (upper-bound y)) (/ 1.0 (lower-bound y))))))
 
 ;;; Misc
 
@@ -128,3 +134,90 @@
   (log-reduce num 2))
 (define (cdr-expt num)
   (log-reduce num 3))
+
+;;; 2.2
+
+(define (list-ref items n) 
+  (if (= n 0) 
+      (car items) 
+      (list-ref (cdr items) (- n 1))))
+
+(define (length items) 
+  (define (length-iter a count) 
+    (if (null? a) 
+        count 
+        (length-iter (cdr a) (+ 1 count))))
+  (length-iter items 0))
+
+(define (append list1 list2) 
+  (if (null? list1) 
+      list2 
+      (cons (car list1) (append (cdr list1) list2))))
+
+(define (last-pair ls)
+  (cond ((null? ls) (error "Can't submit empty list"))
+        ((null? (cdr ls)) ls)
+        (else (last-pair (cdr ls)))))
+
+(define (reverse ls)
+  (if (null? ls)
+      nil
+      (append (reverse (cdr ls))
+              (list (car ls)))))
+
+(define (no-more? coin-values) (null? coin-values))
+(define (except-first-denomination ls) (cdr ls))
+(define (first-denomination ls) (car ls))
+
+(define (cc amount coin-values) 
+  (cond ((= amount 0) 1) 
+        ((or (< amount 0) (no-more? coin-values)) 0) 
+        (else (+ (cc amount 
+                   (except-first-denomination coin-values)) 
+                 (cc (- amount 
+                   (first-denomination coin-values)) coin-values)))))
+
+(define (just-even ls)
+  (cond ((null? ls) nil)
+        ((even? (car ls)) (cons (car ls) (just-even (cdr ls))))
+        (else (just-even (cdr ls)))))
+
+(define (just-odd ls)
+  (cond ((null? ls) nil)
+        ((odd? (car ls)) (cons (car ls) (just-odd (cdr ls))))
+        (else (just-odd (cdr ls)))))
+
+(define (same-parity x . y)
+  (if (even? x)
+      (cons x (just-even y))
+      (cons x (just-odd y))))
+
+(define (map proc items)
+  (if (null? items)
+      nil
+      (cons (proc (car items))
+            (map proc (cdr items)))))
+
+(define (for-each proc ls)
+  (cond ((null? ls) #f)
+        ((null? (cdr ls)) (proc (car ls)))
+        (else (proc (car ls))(for-each proc (cdr ls)))))
+
+(define (count-leaves x) 
+  (cond ((null? x) 0) 
+        ((not (pair? x)) 1) 
+        (else (+ (count-leaves (car x)) 
+                 (count-leaves (cdr x))))))
+
+(define (deep-reverse tree)
+  (if (pair? tree)
+      (reverse (map deep-reverse tree))
+      tree))
+
+(define (fringe tree)
+  (cond ((null? tree) nil)
+        ((pair? tree) (append (fringe (car tree))
+                              (fringe (cdr tree))))
+        (else (list tree))))
+
+
