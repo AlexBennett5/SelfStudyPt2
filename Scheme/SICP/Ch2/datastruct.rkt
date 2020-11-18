@@ -220,4 +220,95 @@
                               (fringe (cdr tree))))
         (else (list tree))))
 
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (square-tree sub-tree)
+             (square sub-tree)))
+       tree))
+
+(define (leaf? x) (not (pair? x)))
+
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+         (if (leaf? sub-tree)
+             (proc sub-tree)
+             (tree-map proc sub-tree)))
+       tree))
+
+(define (subsets s)
+  (if (null? s)
+      (list nil)
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (lambda (subset) (cons (car s) subset)) rest)))))
+
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+        ((predicate (car sequence))
+          (cons (car sequence)
+                (filter predicate (cdr sequence))))
+        (else (filter predicate (cdr sequence)))))
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low (enumerate-interval (+ low 1) high))))
+
+(define (enumerate-tree tree) 
+  (cond ((null? tree) nil) 
+        ((not (pair? tree)) (list tree)) 
+        (else (append (enumerate-tree (car tree)) 
+                      (enumerate-tree (cdr tree))))))
+
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms) 
+                      (+ this-coeff (* x higher-terms)))
+              0
+              coefficient-sequence))
+
+
+(define (count-leaves tree)
+  (accumulate + 0 (map (lambda (root)
+                         (if (leaf? root)
+                             1
+                             (count-leaves root)))
+                       tree)))
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs))))
+
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(define (matrix-*-vector m v)
+  (map (lambda (row) (dot-product row v)) m))
+
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (row) (matrix-*-vector cols row)) m)))
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+(define (fold-right op init seq) (accumulate op init seq))
+
+(define (reverse sequence)
+  (fold-right (lambda (x y) (append y (list x))) nil sequence))
 
