@@ -284,7 +284,7 @@
   (if (null? (car seqs))
       nil
       (cons (accumulate op init (map car seqs))
-            (accumulate-n op init (map cdr seqs))))
+            (accumulate-n op init (map cdr seqs)))))
 
 (define (dot-product v w)
   (accumulate + 0 (map * v w)))
@@ -311,4 +311,54 @@
 
 (define (reverse sequence)
   (fold-right (lambda (x y) (append y (list x))) nil sequence))
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum? (flatmap
+                            (lambda (i) (map (lambda (j) (list i j))
+                                             (enumerate-interval 1 (- i 1))))
+                            (enumerate-interval 1 n)))))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item))) sequence))
+
+(define (permutations s)
+  (if (null? s)
+      (list nil)
+      (flatmap (lambda (x)
+                 (map (lambda (p) (cons x p))
+                  (permutations (remove x s))))
+               s)))
+
+(define (unique-pairs n)
+  (flatmap (lambda (i) (map (lambda (j) (list i j))
+                            (enumerate-interval (inc i) n)))
+           (enumerate-interval 1 (dec n))))
+
+
+(define (sum-to-s? s trip)
+  (= s (+ (car trip) (cadr trip) (caddr trip))))
+
+(define (unique-triples n)
+  (flatmap (lambda (i)
+            (flatmap (lambda (j)
+                       (map (lambda (k) (list i j k))
+                            (enumerate-interval (inc j) n)))
+                     (enumerate-interval (inc i) n)))
+           (enumerate-interval 1 (dec n))))
+
+(define (ordered-triple-sum n s)
+  (filter (lambda (x) (sum-to-s? s x))
+          (unique-triples n)))
+
+
 
