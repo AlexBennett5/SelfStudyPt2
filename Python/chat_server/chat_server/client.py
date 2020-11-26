@@ -16,7 +16,7 @@ class Client:
         server_socket.settimeout(2)
 
         try:
-            server_socket((hostname, portno))
+            server_socket.connect((hostname, portno))
         except:
             print 'Connection error'
             sys.exit()
@@ -24,7 +24,7 @@ class Client:
         server_socket.send(self.username)
         print 'Connected to host'
 
-        prompt()
+        self.prompt()
 
         while True:
             socket_list = [sys.stdin, server_socket]
@@ -32,18 +32,19 @@ class Client:
 
             for chosen_socket in read_sockets:
                 if chosen_socket == server_socket:
-                    data = chosen_socket.recv(4096)
+                    message = chosen_socket.recv(4096)
 
-                    if not data:
-                        print 'Connection error'
+                    if not message:
+                        print 'Connection error: no data'
                         sys.exit()
                     else:
-                        sys.stdout.write(data)
-                        prompt()
+                        sys.stdout.write(message)
+                        self.prompt()
                 else:
                     message = sys.stdin.readline()
                     server_socket.send(message)
-                    prompt()
+                    self.prompt()
+
 
 if __name__ == '__main__':
     if (len(sys.argv) < 4):

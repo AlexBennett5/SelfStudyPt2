@@ -3,37 +3,36 @@ import select
 import sys
 
 class Server:
-    clients = {}
 
     def __init__(self, host, port, max_clients):
         self.host = host
         self.port = port
         self.max_clients = max_clients
-        
+        self.clients = {}
+
     def run(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((self.host, self.port))
         self.server.listen(self.max_clients)
         print 'Listening on %s' % ('%s:%s' % self.server.getsockname())
-        
-        clients[self.server] = 'server'
+        self.clients[self.server] = 'server'
 
         while True:
-            read_sockets, write_sockets, error_sockets = select.select(clients.keys(), [], [])
+            read_sockets, write_sockets, error_sockets = select.select(self.clients.keys(), [], [])
 
             for connection in read_sockets:
-                if connection == server:
-                    client_connection, addr = server.accept()
-                    setup_user(client_connection)
+                if connection == self.server:
+                    client_connection, addr = self.server.accept()
+                    self.setup_user(client_connection)
                 else:
                     try:
-                        message = connection.recv(recv_buffer)
+                        message = connection.recv(4096)
                         if message != '':
-                            broadcast(connection, '\n<' + clients[connection] + '>' + message)
+                            self.broadcast(connection, '\n<' + self.clients[connection] + '>' + message)
                     except:
-                        broadcast(connection, '\n[%s has left the chat]' % clients[connection])
+                        self.broadcast(connection, '\n[%s has left the chat]' % self.clients[connection])
                         connection.close()
-                        del clients[connection]
+                        del self.clients[connection]
                         continue
         self.server.close()
 
@@ -42,21 +41,21 @@ class Server:
             name = connection.recv(1024).strip()
         except socket.error:
             return
-        if name in clients.keys():
+        if name in self.clients.keys():
             connection.send('Username is already taken\n')
         else:
-            clients[connection] = name
-            broadcast(connection, '\n[%s has enterred the chat]' % name)
+            self.clients[connection] = name
+            self.broadcast(connection, '\n[%s has enterred the chat]' % name)
 
-    def broadcast(sender, message):
+    def broadcast(self, sender, message):
         print message,
-    
-        for connection, name in clients.items():
+        for connection, name in self.clients.items():
             if connection != sender:
                 try:
                     connection.send(message)
                 except socket.error:
                     pass
+
 
 if __name__ == '__main__':
     if (len(sys.argv) < 3):
