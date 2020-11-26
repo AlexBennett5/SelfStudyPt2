@@ -1,57 +1,67 @@
 import socket
 import select
+import sys
 
-clients = {}
+class Server:
+    clients = {}
 
-def broadcast(sender, message):
-    print(message, end = '')
+    def __init__(self, host, port, max_clients):
+        self.host = host
+        self.port = port
+        self.max_clients = max_clients
+        
+    def run(self):
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind((self.host, self.port))
+        self.server.listen(self.max_clients)
+        print 'Listening on %s' % ('%s:%s' % self.server.getsockname())
+        
+        clients[self.server] = 'server'
+
+        while True:
+            read_sockets, write_sockets, error_sockets = select.select(clients.keys(), [], [])
+
+            for connection in read_sockets:
+                if connection == server:
+                    client_connection, addr = server.accept()
+                    setup_user(client_connection)
+                else:
+                    try:
+                        message = connection.recv(recv_buffer)
+                        if message != '':
+                            broadcast(connection, '\n<' + clients[connection] + '>' + message)
+                    except:
+                        broadcast(connection, '\n[%s has left the chat]' % clients[connection])
+                        connection.close()
+                        del clients[connection]
+                        continue
+        self.server.close()
+
+    def setup_user(self, connection):
+        try:
+            name = connection.recv(1024).strip()
+        except socket.error:
+            return
+        if name in clients.keys():
+            connection.send('Username is already taken\n')
+        else:
+            clients[connection] = name
+            broadcast(connection, '\n[%s has enterred the chat]' % name)
+
+    def broadcast(sender, message):
+        print message,
     
-    for connection, name in clients.items():
-        if connection != sender:
-            try:
-                connection.send(message)
-            except socket.error:
-                pass
-
-def setup_user(connection):
-    connection.send('Enter your username: ')
-    try:
-        name = connection.recv(1024).strip()
-    except socket.error:
-        return
-    if name in clients.keys():
-        connection.send('Username is already taken\n')
-    else:
-        clients[connection] = name
-        broadcast(name, '\n[%s has enterred the chat]' % name)
-
-def setup_server(host, port, max_clients, recv_buffer):
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((host, port))
-    server.listen(max_clients)
-    print 'Listening on %s' % ('%s:%s' % server.getsockname())
-
-    clients[server] = 'server'
-
-    while True:
-        read_sockets, write_sockets, error_sockets = select.select(clients.keys(), [], [])
-
-        for connection in read_sockets:
-            if connection == server:
-                client_connection, addr = server.accept()
-                setup_user(client_connection)
-            else:
+        for connection, name in clients.items():
+            if connection != sender:
                 try:
-                    connection.send('<You>')
-                    message = connection.recv(recv_buffer)
-                    if message != '':
-                        broadcast(connection, '\n<' + clients[connection] + '>' + message)
-                except:
-                    broadcast(connection, '\n[%s has left the chat]' % clients[connection])
-                    connection.close()
-                    del clients[connection]
-                    continue
-    server.close()
+                    connection.send(message)
+                except socket.error:
+                    pass
 
 if __name__ == '__main__':
-    setup_server('', 1234, 10, 4096)
+    if (len(sys.argv) < 3):
+        print 'Format requires: python server.py hostname portno'
+        sys.exit()
+
+    server = Server(sys.argv[1], int(sys.argv[2]), 10)
+    server.run()
