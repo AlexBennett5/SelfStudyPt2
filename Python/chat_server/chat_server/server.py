@@ -1,6 +1,9 @@
-import socket
-import select
+from socket import socket, AF_INET, SOCK_STREAM
+from threading import Thread
 import sys
+
+BUFFER_SIZE = 4096
+
 
 class Server:
 
@@ -11,55 +14,47 @@ class Server:
         self.clients = {}
 
     def run(self):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.host, self.port))
-        self.server.listen(self.max_clients)
-        print 'Listening on %s' % ('%s:%s' % self.server.getsockname())
-        self.clients[self.server] = 'server'
+        self.server_socket = socket(AF_INET, SOCK_STREAM)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(self.max_clients)
+        accept_thread = Thread(target=self.accept_connections)
+        accept_thread.start()
+        accept_thread.join()
+        self.server_socket.close()
 
+    def accept_connections(self):
         while True:
-            read_sockets, write_sockets, error_sockets = select.select(self.clients.keys(), [], [])
-
-            for connection in read_sockets:
-                if connection == self.server:
-                    client_connection, addr = self.server.accept()
-                    self.setup_user(client_connection)
-                else:
-                    try:
-                        message = connection.recv(4096)
-                        if message != '':
-                            self.broadcast(connection, '\n<' + self.clients[connection] + '>' + message)
-                    except:
-                        self.broadcast(connection, '\n[%s has left the chat]' % self.clients[connection])
-                        connection.close()
-                        del self.clients[connection]
-                        continue
-        self.server.close()
+            connection, address = self.server_socket.accept()
+            print('%s:%s has connected' % address)
+            connection.send(bytes('Welcome! Enter your name', 'utf8'))
+            Thread(target=self.setup_user, args=(connection,)).start()
 
     def setup_user(self, connection):
-        try:
-            name = connection.recv(1024).strip()
-        except socket.error:
-            return
-        if name in self.clients.keys():
-            connection.send('Username is already taken\n')
-        else:
-            self.clients[connection] = name
-            self.broadcast(connection, '\n[%s has enterred the chat]' % name)
+        username = connection.recv(BUFFER_SIZE).decode('utf8')
+        welcome_msg = 'If you ever want to exit the chat, type {quit}.'
+        connection.send(bytes(welcome_msg, 'utf8'))
+        self.broadcast(bytes('[%s has enterred the chat]' % username, 'utf8'))
+        self.clients[connection] = username
 
-    def broadcast(self, sender, message):
-        print message,
-        for connection, name in self.clients.items():
-            if connection != sender:
-                try:
-                    connection.send(message)
-                except socket.error:
-                    pass
+        while True:
+            message = connection.recv(BUFFER_SIZE)
+            if message != bytes('{quit}', 'utf8'):
+                self.broadcast(message, '<' + username + '> ')
+            else:
+                connection.send(bytes('{quit}', 'utf8'))
+                connection.close()
+                del self.clients[connection]
+                self.broadcast(bytes('[%s has left the chat]' % username, 'utf8'))
+                break
+
+    def broadcast(self, message, username=''):
+        for connection in self.clients:
+            connection.send(bytes(username, 'utf8') + message)
 
 
 if __name__ == '__main__':
     if (len(sys.argv) < 3):
-        print 'Format requires: python server.py hostname portno'
+        print('Format requires: python server.py hostname portno')
         sys.exit()
 
     server = Server(sys.argv[1], int(sys.argv[2]), 10)
