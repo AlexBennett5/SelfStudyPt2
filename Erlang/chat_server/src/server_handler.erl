@@ -4,16 +4,26 @@
 -define(TCP_OPTIONS, [binary, {packet, 2}, {active, false}, {reuseaddr, true}]).
 
 listen(Portno, DictPid) -> 
-  {ok, ListenSocket} = gen_tcp:listen(Portno, ?TCP_OPTIONS),
-  io:format("Server is listening~n"),
-  spawn_link(fun() -> accept_connections(ListenSocket, DictPid) end).
+  case gen_tcp:listen(Portno, ?TCP_OPTIONS) of
+    {ok, ListenSocket} ->
+      spawn_link(fun() -> accept_connections(ListenSocket, DictPid) end),
+      io:format("Listening on ~p~n", [ListenSocket]);
+    {error, Error} ->
+      io:format("Listen Error: ~w~n", [Error])
+  end.
 
 accept_connections(ListenSocket, DictPid) ->
-  {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-  gen_tcp:send(ClientSocket, "Welcome! Enter your name~n"),
-  ClientPid = spawn(fun() -> setup_user(ClientSocket, DictPid) end),
-  gen_tcp:controlling_process(ClientSocket, ClientPid),
-  accept_connections(ListenSocket, DictPid).
+  case gen_tcp:accept(ListenSocket) of
+    {ok, ClientSocket} ->
+      io:format("Accepting:~w~n", [ClientSocket]),
+      gen_tcp:send(ClientSocket, "Welcome! Enter your name~n"),
+      ClientPid = spawn(fun() -> io:format("Client connected"),
+                                 setup_user(ClientSocket, DictPid) end),
+      gen_tcp:controlling_process(ClientSocket, ClientPid),
+      accept_connections(ListenSocket, DictPid);
+    {error, Error} ->
+      io:format("Accept Error: ~w~n", [Error])
+  end.
   
 setup_user(ClientSocket, DictPid) ->
   {ok, Username} = gen_tcp:recv(ClientSocket, 0),

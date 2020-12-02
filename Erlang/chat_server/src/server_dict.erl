@@ -35,4 +35,4 @@ dict_manager(ClientDict) ->
   end.
 
 start() ->
-  run_server(49152).
+  run_server(1234).
