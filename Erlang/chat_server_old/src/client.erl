@@ -1,5 +1,6 @@
 -module(client).
-
+-export([start/0]).
+-export([connect_to/1, receive_loop/1, send_message/2]).
 -define(TCP_OPTIONS, [binary, {packet, 2}, {active, false}, {reuseaddr, true}]).
 
 connect_to(Portno) ->
@@ -26,3 +27,6 @@ receive_loop(Socket) ->
 
 send_message(Socket, Message) ->
   gen_tcp:send(Socket, Message).
+
+start() ->
+  connect_to(1234).
