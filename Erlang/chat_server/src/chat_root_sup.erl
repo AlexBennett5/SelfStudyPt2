@@ -8,7 +8,7 @@ start_link(Portno, MaxAcceptors) ->
   io:format("Starting root supervisor~n"),
   supervisor:start_link({local, ?MODULE}, ?MODULE, [Portno, MaxAcceptors]).
 
-init([Portno, MaxAcceptors]) ->
-  AcceptSpec = {chat_accept_sup, {chat_accept_sup, start_link, [Portno, MaxAcceptors]}, transient, 5000, supervisor, [chat_accept_sup]},
+init([Portno, MaxAcceptors]) -> 
   ServerSpec = {chat_genserv, {chat_genserv, start_link, []}, transient, 5000, worker, [chat_genserv]},
-  {ok, {{one_for_one, 1, 5}, [AcceptSpec, ServerSpec]}}.
+  AcceptSpec = {chat_accept_sup, {chat_accept_sup, start_link, [Portno, MaxAcceptors]}, transient, 5000, supervisor, [chat_accept_sup]}, 
+  {ok, {{one_for_one, 1, 5}, [ServerSpec, AcceptSpec]}}.

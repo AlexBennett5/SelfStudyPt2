@@ -13,9 +13,8 @@ client_accept(ListenerSocket) ->
 client_setup(ClientSocket) ->
   gen_tcp:send(ClientSocket, "Enter your username: "),
   case gen_tcp:recv(ClientSocket, 0) of
-    {ok, Msg} ->
+    {ok, Username} ->
       io:format("Received your message~n"),
-      Username = process_string(Msg),
       chat_genserv:add_client(Username, ClientSocket),
       io:format("Add client request sent to genserv~n"),
       client_loop(ClientSocket);
@@ -26,10 +25,10 @@ client_setup(ClientSocket) ->
 client_loop(ClientSocket) ->
   {ok, Msg} = gen_tcp:recv(ClientSocket, 0),
   Message = process_string(Msg),
-  io:format("<Your message, pre-genserv> ~p~n", Message),
+  io:format("<Your message, pre-genserv> ~p~n", [Message]),
     case Message of
       "{quit}" -> chat_genserv:remove_client(self());
-      _ -> chat_genserv:broadcast_message(Message),
+      _ -> chat_genserv:broadcast_message(Msg),
            client_loop(ClientSocket)
     end.
 

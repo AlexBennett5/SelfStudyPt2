@@ -13,13 +13,14 @@
 
 start_link() ->
   io:format("Starting genserv~n"),
-  gen_server:start_link(?MODULE, [], []).
+  gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Client API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 add_client(Username, Socket) ->
+  io:format("Adding client: ~p~n", [Username]),
   gen_server:call(?MODULE, {add_client, Username, Socket}).
 
 remove_client(Pid) ->
@@ -58,7 +59,7 @@ handle_cast({remove_client, Pid}, State) ->
 handle_cast({broadcast_message, Pid, Message}, State) ->
   ClientSendingMessage = retrieve_from_list(State#state.clients, Pid),
   ClientUsername = ClientSendingMessage#client_info.username,
-  MessageString = "<" ++ process_string(ClientUsername) ++ "> " ++ Message ++ "\n",
+  MessageString = "<" ++ process_string(ClientUsername) ++ "> " ++ process_string(Message) ++ "\n",
   broadcast(State#state.clients, MessageString),
   io:format(MessageString),
   {noreply, State}.
