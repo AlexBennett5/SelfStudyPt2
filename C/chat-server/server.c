@@ -36,7 +36,7 @@ void broadcast(char* message) {
       break;
     }
   }
-  printf("%s\n", message);
+  printf("%s", message);
   pthread_mutex_unlock(&lock);
 }
 
@@ -53,11 +53,15 @@ void client_quits(client_info* client) {
 void client_loop(client_info* client) {
   char buffer_out[BUFFER_SIZE];
   char buffer_in[BUFFER_SIZE];
+  char compare[BUFFER_SIZE];
 
   while(1) {
     read(client->sockfd, buffer_in, sizeof(buffer_in));
+    
+    strcpy(compare, buffer_in);
+    trim_whitespace(compare);
 
-    if (strcmp(buffer_in, "{quit}\n") == 0) {
+    if (strcmp(compare, "{quit}") == 0) {
       client_quits(client);
       return;
     }
@@ -79,6 +83,7 @@ void* handle_client(void *client_info_ptr) {
   write(newclient->sockfd, username_msg, strlen(username_msg));
   char username[BUFFER_SIZE];
   read(newclient->sockfd, username, sizeof(username));
+  trim_whitespace(username);
   newclient->username = username;
   
   sprintf(buffer, "[%s has entered the chat]\n", newclient->username);
@@ -139,20 +144,29 @@ void setup_server(int portno) {
 
 // Helper functions
 
-void read_trim(int fd, char* buffer) {
-  read(fd, buffer, sizeof(buffer));
-  trim_whitespace(buffer);
-}
-
 void trim_whitespace(char* string) {
 
-  size_t len = strlen(string) + 1;
+  size_t len = strlen(string);
   char* end = string + len;
-  
-  while(string < end && isspace(*end))  
-    end--;
+  char* front = string;
 
-  *end = '\0';
+  while(isspace((unsigned char) *front)) { ++front; }
+
+  if (end != front) {
+    while(isspace((unsigned char) *(--end)) && end != front) {}
+  }
+
+  if (front != string && end == front)
+    *string = '\0';
+  else if (string + len - 1 != end)
+    *(end + 1) = '\0';
+
+  end = string;
+  if (front != string) {
+    while (*front) { *end++ = *front++; }
+    *end = '\0';
+  }
+
 }
 
 int main(int argc, char *argv[]) {
