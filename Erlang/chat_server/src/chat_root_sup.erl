@@ -5,7 +5,6 @@
 -export([init/1]).
 
 start_link(Portno, MaxAcceptors) ->
-  io:format("Starting root supervisor~n"),
   supervisor:start_link({local, ?MODULE}, ?MODULE, [Portno, MaxAcceptors]).
 
 init([Portno, MaxAcceptors]) -> 

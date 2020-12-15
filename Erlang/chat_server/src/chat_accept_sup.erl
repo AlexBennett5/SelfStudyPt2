@@ -7,7 +7,6 @@
 -define(TCP_OPTIONS, [binary, {packet, 0}, {active, false}, {reuseaddr, true}]).
 
 start_link(Portno, MaxAcceptors) ->
-  io:format("Starting acceptor supervisor~n"),
   supervisor:start_link({local, ?MODULE}, ?MODULE, [Portno, MaxAcceptors]).
 
 init([Portno, MaxAcceptors]) ->

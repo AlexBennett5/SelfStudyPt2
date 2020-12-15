@@ -1,4 +1,4 @@
--module(server_tests).
+-module(example_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 get_msg(Socket, Message) ->
