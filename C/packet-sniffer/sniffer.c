@@ -2,6 +2,8 @@
 #include <pcap.h>
 #include <arpa/inet.h> 
 #include <net/ethernet.h>
+#include <net/ip.h>
+#include <net/in.h>
 #include "sniffer.h"
 
 int main() {
@@ -30,9 +32,24 @@ int main() {
 
 void packet_handler(u_char *args, const struct pcap_pkthdr *packet_header, const u_char *packet_body) {
 
+  printf("**********************************************\n");
+
   struct ether_header *ethframe = (struct ether_header *) packet_body;
   print_etherframe(ethframe);
 
+  int size = sizeof(ether_header);
+
+  switch(ntohs(ethframe->ether_type)) {
+
+    case ETHERTYPE_IP:
+      handle_ipv4(packet_body, size);
+      break;
+
+    default:
+      break;
+  }
+
+  printf("**********************************************\n");
 }
 
 // Link Layer //
@@ -83,4 +100,48 @@ void print_ethertype(unsigned int ethertype) {
   }
 }
 
+// Internet Layer //
+
+void handle_ipv4(const u_char *packet, int size) {
+
+  struct ip *ipheader = (struct ip *) (packet + size);
+  print_ipv4(ipheader);
+  
+}
+
+void print_ipv4(struct ip *ipheader) {
+
+  char source_buf[INET_ADDRSTRLEN];
+  char dest_buf[INET_ADDRSTRLEN];
+
+  inet_ntop(AF_INET, &(ipheader->ip_src), source_buf, INET_ADDRSTRLEN);
+  inet_ntop(AF_INET, &(ipheader->ip_dst), dest_buf, INET_ADDRSTRLEN);
+
+  printf("***************[IPv4 Packet]***************\n\n");
+  printf("    |Total Length: %hu bytes\n", (unsigned short) ipheader->ip_len);
+  printf("    |Identification: %hu\n", (unsigned short) ipheader->ip_id);
+  printf("    |Time To Live: %u sec\n", (unsigned char) ipheader->ip_ttl);
+  printf("    |Next Protocol: %s\n", print_next_protocol((unsigned char) ipheader->ip_p));
+  printf("    |Checksum: %hu\n\n", (unsigned short) ipheader->ip_sum);
+  
+  printf("    |Source IP: %s\n", source_buf);
+  printf("    |Destination IP: %s\n", dest_buf);
+}
+
+char* print_next_protocol(unsigned char protocol_num) {
+
+  switch(protocol_num) {
+  
+    case IPPROTO_TCP:
+      return "TCP";
     
+    case IPPROTO_UDP:
+      return "UDP";
+
+    case IPPROTO_ICMP:
+      return "ICMP";
+
+    default:
+      return "Other";  
+  }
+}
