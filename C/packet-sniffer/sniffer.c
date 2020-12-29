@@ -2,8 +2,9 @@
 #include <pcap.h>
 #include <arpa/inet.h> 
 #include <net/ethernet.h>
-#include <net/ip.h>
-#include <net/in.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include "sniffer.h"
 
 int main() {
@@ -106,7 +107,26 @@ void handle_ipv4(const u_char *packet, int size) {
 
   struct ip *ipheader = (struct ip *) (packet + size);
   print_ipv4(ipheader);
-  
+
+  size += sizeof(struct ip);
+
+  switch(ipheader->ip_p) {
+
+    case IPPROTO_TCP:
+      handle_tcp(packet, size);
+      break;
+
+    case IPPROTO_UDP:
+      //handle_udp(packet, size);
+      break;
+
+    case IPPROTO_ICMP:
+      //handle_icmp(packet, size);
+
+    default:
+      return;
+  }
+
 }
 
 void print_ipv4(struct ip *ipheader) {
@@ -144,4 +164,23 @@ char* print_next_protocol(unsigned char protocol_num) {
     default:
       return "Other";  
   }
+}
+
+// Transport Layer //
+
+void handle_tcp(const u_char *packet, int size) {
+
+  struct tcphdr *segment = (struct tcphdr *) (packet + size);
+  print_tcp(segment);
+
+}
+
+void print_tcp(struct tcphdr *segment) {
+
+  printf("***************[TCP Packet]***************\n\n");
+  printf("    |Source Port: %hu\n", (unsigned short) segment->th_sport);
+  printf("    |Destination Port: %hu\n", (unsigned short) segment->th_dport);
+  printf("    |Sequence Number: %i\n", (unsigned int) segment->th_seq);
+  printf("    |Ack Number: %i\n", (unsigned int) segment->th_ack);
+
 }
