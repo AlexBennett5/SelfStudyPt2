@@ -92,14 +92,9 @@ obj_t *forward_obj(heap_t *heap, obj_t *source) {
   }
 }
 
-void forward_root(heap_t *heap) {}
+void initialize_root(heap_t *heap) {}
 
-NUM_T,
-  LIST_T,
-  FUNC_T,
-  SYMBOL_T,
-  BOOL_T,
-  FORWARD_T
+void forward_root(heap_t *heap) {}
 
 void gc_collect(heap_t *heap) {
   
@@ -134,4 +129,44 @@ void gc_collect(heap_t *heap) {
     scan += scan->size;
   }
 }
+
+////////////////////////////
+// Constructor
+////////////////////////////
+
+static obj_t *make_int(heap_t *heap, int val) {
+  obj_t *newint = alloc(heap, sizeof(int));
+  newint->val = val;
+  return newint;
+}
+
+static obj_t *make_cons(heap_t *heap, obj_t *car, obj_t *cdr) {
+  obj_t *newcons = alloc(heap, sizeof(obj_t *) * 2);
+  newcons->car = car;
+  newcons->cdr = cdr;
+  return newcons;
+}
+
+static obj_t *make_func(heap_t *heap, obj_t *params, obj_t *body, obj_t *env) {
+  obj_t *newfunc = alloc(heap, sizeof(obj_t *) * 3);
+  newfunc->params = params;
+  newfunc->body = body;
+  newfunc->env = env;
+  return newfunc;
+}
+
+static obj_t *make_symbol(heap_t *heap, char* str) {
+  obj_t *newsym = alloc(heap, strlen(str));
+  newsym->str;
+  return newsym;
+}
+
+
+////////////////////////////
+// Primitives
+////////////////////////////
+
+
+
+
 

@@ -1,0 +1,13 @@
+(load "test-driver.scm")
+(load "tests-1.1-req.scm")
+
+(define (emit-program x)
+  (unless (integer? x) (error 'compile-program "Not an integer"))
+  (emit "     .section    __TEXT,__text,regular,pure_instructions")
+  (emit "     .globl  _scheme_entry")
+  (emit "     .p2align    4, 0x90")
+  (emit "_scheme_entry:")
+  (emit "     .cfi_startproc")
+  (emit "     movl    $~s, %eax" x)
+  (emit "     retq")
+  (emit "     .cfi_endproc"))

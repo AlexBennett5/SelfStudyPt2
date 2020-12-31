@@ -2,6 +2,18 @@ import socket
 import struct
 import binascii
 
+### Helper Protocol ###
+
+class NullProtocol:
+
+    def print_protocol(self):
+        print("*************************************")
+        print("***********Unknown Protocol**********")
+        print("*************************************")
+
+    def get_next_protocol(self):
+        return NullProtocol()
+
 ### Link Layer ###
 
 class EthernetFrame:
@@ -12,9 +24,9 @@ class EthernetFrame:
         self.macSrc = binascii.hexlify(macSrc)
         ethertype = hex(ethertype)
         
-        if (ethertype == '0x0800')
+        if (ethertype == '0x0800'):
           self.ethertype = 'IPv4'
-        elif (ethertype == '0x86DD')
+        elif (ethertype == '0x86DD'):
           self.ethertype = 'IPv6'
         
         self.payload = frame[14:]
@@ -25,10 +37,12 @@ class EthernetFrame:
         print("EtherType: {}".format(self.ethertype))
 
     def get_next_protocol(self):
-        if (self.ethertype = 'IPv4'):
+        if (self.ethertype == 'IPv4'):
             return IPv4(self.payload)
-        elif (self.ethertype = 'IPv6'):
+        elif (self.ethertype == 'IPv6'):
             return IPv6(self.payload)
+        else:
+            return NullProtocol()
 
 ### Internet Layer ###
 
@@ -64,6 +78,8 @@ class IPv4:
             return TCP(self.payload)
         elif (self.next_header == 'UDP'):
             return UDP(self.payload)
+        else:
+            return NullProtocol()
 
 class IPv6:
 
@@ -105,6 +121,8 @@ class IPv6:
             return TCP(self.payload)
         elif (self.next_header == 'UDP'):
             return UDP(self.payload)
+        else:
+            return NullProtocol()
 
 class ICMP:
 
