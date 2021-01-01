@@ -1,4 +1,4 @@
-gcc -Wall ctest.c runtime.c -o test
+gcc -Wall ctest.c startup.c -o test
 echo "*OUTPUT*"
 ./test
 gcc -fomit-frame-pointer -S ctest.c
