@@ -1,0 +1,2 @@
+
+(define *symbols* (list (cons #\
