@@ -97,7 +97,7 @@ parseProgram code = runParser program code
 runParser :: Parser a -> String -> a
 runParser p s = case parse p s of
                   [(res, [])] -> res
-                  [(_, rest)] -> error "Parser did not consume entire stream."
+                  [(_, rest)] -> error ("Parser did not consume entire stream: " ++ rest)
                   _           -> error "Parser error."
 
 program :: Parser [Expr]
@@ -116,7 +116,7 @@ defnVar = parens $ do symb "define"
                       return $ Var v ex 
 
 variable :: Parser String
-variable = token identifier
+variable = token identifier <|> token primitive
 
 defnFunc :: Parser Expr
 defnFunc = parens $ do symb "define"
@@ -132,13 +132,24 @@ identifier = do c   <- alpha
                 cs  <- manyp alphanum
                 return (c:cs)
 
+primitive :: Parser String
+primitive = string "+"
+   <|> string "-"
+   <|> string "*"
+   <|> string "/"
+   <|> string "<"
+   <|> string ">"
+   <|> string "car"
+   <|> string "cdr"
+
 expr :: Parser Expr
 expr = constant
-   <|> callvar
+   <|> call
    <|> quote
    <|> lambda
    <|> cond
    <|> application
+   <|> parens expr
 
 constant :: Parser Expr
 constant = boolean <|> num <|> parens boolean <|> parens num
@@ -160,8 +171,8 @@ integer = token number
 num :: Parser Expr
 num = Num <$> integer
  
-callvar :: Parser Expr
-callvar = CallVar <$> variable
+call :: Parser Expr
+call = Call <$> variable
 
 quote :: Parser Expr
 quote = do symb "'"
