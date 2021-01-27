@@ -1,41 +1,46 @@
 import math
+import pqueue
 
 inf = math.inf
-Edge = namedtuple('Edge', ['start', 'end', 'cost'])
 
-class Graph:
+def dijkstra(graph, src, dest):
+    unvisited = {v for v in graph.keys()}
+    
+    if src not in unvisited or dest not in unvisited:
+        raise RuntimeError("Invalid vertex")
+    
+    dist = {v:inf for v in unvisited}
+    dist[src] = 0
+    prev = {}
+    pq = pqueue.PriorityQueue()
+    
+    for v in unvisited:
+        pq.push(dist[v], v)
 
-    def __init__(self, edges):
-        self.edges = [Edge(*edge) for edge in edges]
-        self.vertices = {e.start for e in self.edges} | {e.end for e in self.edges}
+    while unvisited:
+        priority, v = pq.pop()
+        unvisited.remove(v)
+        if v == dest: break
 
-    def dijkstra(self, begin, end):
-        if begin not in self.vertices:
-            raise RuntimeError("Invalid beginning vertex")
-        dist = {vertex:inf for vertex in self.vertices}
-        previous = {vertex:None for vertex in self.vertices}
-        dist[begin] = 0
-        q = self.vertices.copy()
-        neighbors = {vertex:set() for vertex in self.vertices}
+        for u in graph[v]:
+            if u in unvisited:
+                if graph[v][u] < 0:
+                    raise RuntimeError("Negative edge")
+                
+                alt = dist[v] + graph[v][u]
+                if alt < dist[u]:
+                    pq.push(alt, u)
+                    dist[u] = alt
+                    prev[u] = v
 
-        for start, end, cost in self.edges:
-            neighbors[start].add((end, cost))
-
-        while q:
-            u = min(q, key=lambda vertex: dist[vertex])
-            q.remove(u)
-            if dist[u] == inf or u == end:
-                break
-            for v, cost in neighbors[u]:
-                alt = dist[u] + cost
-                if alt < dist[v]:
-                    dist[v] = alt
-                    previous[v] = u
-        s, u = deque(), dest
-        while previous[u]:
-            s.appendleft(u)
-            u = previous[u]
-        s.appendleft(u)
-
-
+    return get_path(prev, src, dest), dist[dest] 
+    
+def get_path(prev, src, dest):
+    v = dest
+    path = [v]
+    while v != src:
+        v = prev[v]
+        path.append(v)
+    path.reverse()
+    return path
 
